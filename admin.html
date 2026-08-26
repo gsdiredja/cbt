@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin CBT - Import Soal Word</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Library Mammoth untuk membaca DOCX dan Gambar -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+</head>
+<body class="bg-slate-100 min-h-screen p-6">
+  <div class="max-w-4xl mx-auto bg-white p-6 rounded-xl shadow-md">
+    <h1 class="text-2xl font-bold text-slate-800 mb-2">Panel Guru: Import Bank Soal Word (.docx)</h1>
+    <p class="text-sm text-slate-500 mb-6">Mendukung 5 jenis soal, Equation LaTeX ($...$), serta gambar/bagan otomatis.</p>
+
+    <div class="mb-4">
+      <label class="block text-sm font-semibold mb-1">URL Deployment Web App Google Apps Script:</label>
+      <input type="text" id="apiUrl" class="w-full border p-2 rounded text-sm" placeholder="https://script.google.com/macros/s/.../exec">
+    </div>
+
+    <div class="mb-6 border-2 border-dashed border-slate-300 p-6 rounded-lg text-center bg-slate-50">
+      <input type="file" id="wordFile" accept=".docx" class="hidden" onchange="handleFile(this)">
+      <label for="wordFile" class="cursor-pointer px-4 py-2 bg-indigo-600 text-white font-medium rounded hover:bg-indigo-700">Pilih File Word (.docx)</label>
+      <p id="fileName" class="text-xs text-slate-500 mt-2">Belum ada file dipilih</p>
+    </div>
+
+    <div id="previewContainer" class="hidden">
+      <div class="flex justify-between items-center mb-3">
+        <h2 class="font-bold text-lg text-slate-700">Hasil Parsing Soal (<span id="totalSoal">0</span> butir)</h2>
+        <button onclick="uploadToSheets()" id="btnUpload" class="px-5 py-2 bg-emerald-600 text-white font-semibold rounded hover:bg-emerald-700">Simpan ke Google Sheets</button>
+      </div>
+      <div id="previewList" class="space-y-4 max-h-96 overflow-y-auto border p-4 rounded bg-slate-50 text-sm"></div>
+    </div>
+  </div>
+
+  <script>
+    let parsedQuestions = [];
+
+    async function handleFile(input) {
+      const file = input.files[0];
+      if (!file) return;
+      document.getElementById("fileName").innerText = file.name;
+
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const arrayBuffer = event.target.result;
+        // Mammoth mengonversi gambar di Word menjadi Base64 <img>
+        mammoth.convertToHtml({ arrayBuffer: arrayBuffer })
+          .then(displayResult)
+          .catch(err => alert("Gagal membaca DOCX: " + err));
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function displayResult(result) {
+      const rawHtml = result.value;
+      // Pisahkan berdasarkan nomor soal (Regex mendeteksi "1. [TAG]", "2. [TAG]")
+      const rawBlocks = rawHtml.split(/(?=\d+\.\s*\[(?:BS|PG|PGK|JODOH|ESSAY)\])/gi);
+      
+      parsedQuestions = [];
+      const previewList = document.getElementById("previewList");
+      previewList.innerHTML = "";
+
+      rawBlocks.forEach((block, index) => {
+        if (!block.trim()) return;
+        
+        // Ekstraksi Tag & Nomor
+        const matchType = block.match(/(\d+)\.\s*\[(BS|PG|PGK|JODOH|ESSAY)\]/i);
+        if (!matchType) return;
+
+        const no = matchType[1];
+        const tipe = matchType[2].toUpperCase();
+
+        // Ekstraksi Kunci
+        let kunci = "";
+        const matchKunci = block.match(/KUNCI:\s*([^<]+)/i);
+        if (matchKunci) kunci = matchKunci[1].trim();
+
+        // Ekstraksi Opsi A - E
+        let opsi_a = "", opsi_b = "", opsi_c = "", opsi_d = "", opsi_e = "";
+        let cleanBlock = block.replace(/KUNCI:\s*[^<]+/i, "");
+
+        if (tipe === "PG" || tipe === "PGK" || tipe === "BS") {
+          const parts = cleanBlock.split(/(?=[A-E]\.\s*)/g);
+          const qText = parts[0].replace(/^\d+\.\s*\[[^\]]+\]\s*/i, "").trim();
+
+          parts.forEach(p => {
+            if (/^A\.\s*/i.test(p)) opsi_a = p.replace(/^A\.\s*/i, "").trim();
+            if (/^B\.\s*/i.test(p)) opsi_b = p.replace(/^B\.\s*/i, "").trim();
+            if (/^C\.\s*/i.test(p)) opsi_c = p.replace(/^C\.\s*/i, "").trim();
+            if (/^D\.\s*/i.test(p)) opsi_d = p.replace(/^D\.\s*/i, "").trim();
+            if (/^E\.\s*/i.test(p)) opsi_e = p.replace(/^E\.\s*/i, "").trim();
+          });
+
+          parsedQuestions.push({ no, tipe, pertanyaan: qText, opsi_a, opsi_b, opsi_c, opsi_d, opsi_e, kunci });
+        } else {
+          // JODOH / ESSAY
+          const qText = cleanBlock.replace(/^\d+\.\s*\[[^\]]+\]\s*/i, "").trim();
+          parsedQuestions.push({ no, tipe, pertanyaan: qText, kunci });
+        }
+      });
+
+      document.getElementById("totalSoal").innerText = parsedQuestions.length;
+      document.getElementById("previewContainer").classList.remove("hidden");
+
+      parsedQuestions.forEach(q => {
+        const div = document.createElement("div");
+        div.className = "p-3 bg-white border rounded shadow-sm";
+        div.innerHTML = `<strong>No ${q.no} [${q.tipe}]</strong>: <div>${q.pertanyaan}</div><div class="text-xs text-slate-500 mt-1">Kunci: <span class="font-bold text-emerald-600">${q.kunci}</span></div>`;
+        previewList.appendChild(div);
+      });
+    }
+
+    async function uploadToSheets() {
+      const url = document.getElementById("apiUrl").value.trim();
+      if (!url) return alert("Masukkan URL Web App Apps Script terlebih dahulu!");
+
+      const btn = document.getElementById("btnUpload");
+      btn.innerText = "Mengunggah...";
+      btn.disabled = true;
+
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          body: JSON.stringify({ action: "saveBankSoal", soalList: parsedQuestions })
+        });
+        const result = await res.json();
+        alert(result.message || "Berhasil tersimpan!");
+      } catch (e) {
+        alert("Gagal mengunggah ke Sheets: " + e);
+      } finally {
+        btn.innerText = "Simpan ke Google Sheets";
+        btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>
