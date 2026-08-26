@@ -273,54 +273,61 @@
           opsiDiv.appendChild(label);
         });
       } 
-      // 3. Menjodohkan (Format 2 Kolom Berdampingan)
+      // 3. Menjodohkan (Format 2 Kolom Interaktif & Rapi)
       else if (s.tipe === "JODOH") {
-        const fullText = s.pertanyaan;
-        let instruksi = fullText.split(/Pernyataan Kiri:/i)[0] || "Jodohkan pernyataan di kolom kiri dengan pasangan yang tepat di kolom kanan:";
-        document.getElementById("soalContainer").innerHTML = `<div class="mb-4 text-slate-800">${instruksi}</div>`;
+        // Hilangkan tag pembungkus HTML berlebih dari Word
+        let cleanHtml = s.pertanyaan.replace(/<\/?(p|div|span)[^>]*>/gi, "\n").replace(/<br\s*\/?>/gi, "\n");
 
-        const kiriMatch = fullText.match(/Pernyataan Kiri:\s*([\s\S]*?)(?=Pilihan Kanan:|$)/i);
-        const kananMatch = fullText.match(/Pilihan Kanan:\s*([\s\S]*)/i);
+        // Pisahkan Instruksi, Kolom Kiri, dan Kolom Kanan
+        let instruksi = cleanHtml.split(/Pernyataan Kiri:/i)[0] || "Jodohkan pernyataan di kolom kiri dengan pasangan yang tepat di kolom kanan:";
+        document.getElementById("soalContainer").innerHTML = `<div class="font-medium text-slate-700 mb-2">${instruksi.trim()}</div>`;
 
-        const teksKiri = kiriMatch ? kiriMatch[1].trim().replace(/^\d+\.\s*/i, "") : fullText;
-        const rawPilihanKanan = kananMatch ? kananMatch[1].trim().split('\n').filter(x => x.trim()) : [];
+        let kiriMatch = cleanHtml.match(/Pernyataan Kiri:\s*([\s\S]*?)(?=Pilihan Kanan:|$)/i);
+        let kananMatch = cleanHtml.match(/Pilihan Kanan:\s*([\s\S]*)/i);
 
-        let opsiKananList = rawPilihanKanan.map(item => {
-          const matchHuruf = item.match(/^([A-Z])\.\s*(.*)/i);
+        let teksKiri = kiriMatch ? kiriMatch[1].trim().replace(/^\d+\.\s*/i, "") : "Pernyataan Utama";
+        let rawKananText = kananMatch ? kananMatch[1].trim() : "";
+
+        // Pecah opsi kanan berdasarkan pola huruf (A., B., C., D., E.)
+        let splitOpsi = rawKananText.split(/(?=[A-E]\.\s*)/g).filter(x => x.trim().length > 0);
+
+        let opsiKananList = splitOpsi.map(item => {
+          let matchHuruf = item.trim().match(/^([A-E])\.\s*([\s\S]*)/i);
           return {
-            key: matchHuruf ? matchHuruf[1].toUpperCase() : item.trim(),
-            text: matchHuruf ? matchHuruf[2] : item.trim()
+            key: matchHuruf ? matchHuruf[1].toUpperCase() : "A",
+            text: matchHuruf ? matchHuruf[2].trim() : item.trim()
           };
         });
 
-        // Pengacakan opsi respon kanan pada soal menjodohkan
-        if (!s.shuffledJodohOptions) {
+        // Pengacakan opsi jawaban kanan per butir soal
+        if (!s.shuffledJodohOptions || s.shuffledJodohOptions.length === 0) {
           s.shuffledJodohOptions = shuffleArray([...opsiKananList]);
         }
 
         let twoColumnHTML = `
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
-            <!-- KOLOM KIRI: PERNYATAAN 1 -->
-            <div class="bg-indigo-50/40 border border-indigo-100 p-5 rounded-2xl">
-              <div class="flex items-center gap-2 mb-3">
-                <span class="w-2.5 h-2.5 rounded-full bg-indigo-600"></span>
-                <span class="text-xs font-bold uppercase tracking-wider text-indigo-900">Pernyataan / Premis</span>
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-5 items-start mt-2">
+            
+            <!-- KOLOM KIRI: PERNYATAAN / PREMIS -->
+            <div class="md:col-span-5 bg-indigo-50/60 border-2 border-indigo-200/70 p-5 rounded-2xl shadow-sm sticky top-20">
+              <div class="flex items-center gap-2 mb-3 pb-2 border-b border-indigo-200">
+                <span class="w-3 h-3 rounded-full bg-indigo-600 ring-4 ring-indigo-100"></span>
+                <span class="text-xs font-bold uppercase tracking-wider text-indigo-900">Pernyataan Soal</span>
               </div>
-              <div class="text-sm font-medium text-slate-800 leading-relaxed">
+              <div class="text-sm font-semibold text-slate-800 leading-relaxed">
                 ${teksKiri}
               </div>
             </div>
 
-            <!-- KOLOM KANAN: PILIHAN JAWABAN (PERNYATAAN 2) -->
-            <div class="space-y-3">
+            <!-- KOLOM KANAN: PILIHAN JAWABAN (TANPA HURUF A/B/C/D) -->
+            <div class="md:col-span-7 space-y-3">
               <div class="flex items-center gap-2 mb-1 px-1">
                 <span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
-                <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Pilih Pasangan yang Tepat:</span>
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Pilih Pasangan Jawaban:</span>
               </div>
               ${s.shuffledJodohOptions.map((opt) => {
                 const isSelected = userAnswers[index] === opt.key;
                 return `
-                  <label class="flex items-center gap-3.5 p-4 border rounded-xl hover:bg-indigo-50/40 cursor-pointer transition-all ${isSelected ? 'border-indigo-600 bg-indigo-50/50 shadow-sm' : 'border-slate-200 bg-white'}">
+                  <label class="flex items-center gap-3.5 p-4 border rounded-xl hover:bg-indigo-50/40 cursor-pointer transition-all ${isSelected ? 'border-indigo-600 bg-indigo-50/60 ring-2 ring-indigo-500/20 shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300'}">
                     <input 
                       type="radio" 
                       name="jodoh_${index}" 
@@ -334,10 +341,11 @@
                 `;
               }).join('')}
             </div>
+
           </div>
         `;
         opsiDiv.innerHTML = twoColumnHTML;
-      } 
+      }
       // 4. Uraian / Essay
       else {
         document.getElementById("soalContainer").innerHTML = s.pertanyaan;
