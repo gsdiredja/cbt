@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Aplikasi CBT Online Siswa</title>
+  <title>CBT Online Siswa</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- MathJax Configuration untuk LaTeX ($...$) -->
+  <!-- MathJax Configuration untuk Render Equation LaTeX ($...$) -->
   <script>
     window.MathJax = {
       tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
@@ -14,7 +14,7 @@
   </script>
   <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" id="MathJax-script" async></script>
   <style>
-    img { max-width: 100%; height: auto; border-radius: 0.5rem; margin: 0.5rem 0; }
+    img { max-width: 100%; height: auto; border-radius: 0.5rem; margin: 0.5rem 0; display: inline-block; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-800 antialiased select-none">
@@ -24,25 +24,21 @@
     <div class="max-w-md w-full bg-white p-8 rounded-2xl shadow-xl border border-slate-200">
       <div class="text-center mb-6">
         <h2 class="text-2xl font-black text-indigo-700 tracking-tight">CBT ONLINE SEKOLAH</h2>
-        <p class="text-xs text-slate-500 mt-1">Sistem Ujian Berbasis Komputer & Terintegrasi</p>
+        <p class="text-xs text-slate-500 mt-1">Sistem Ujian Terintegrasi Google Spreadsheet</p>
       </div>
 
       <div class="space-y-4">
         <div>
           <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nomor Induk Siswa (NISN)</label>
-          <input type="text" id="nisn" class="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="Masukkan NISN">
+          <input type="text" id="nisn" class="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="Masukkan NISN Anda">
         </div>
         <div>
-          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nama Lengkap</label>
-          <input type="text" id="nama" class="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="Nama sesuai daftar hadir">
-        </div>
-        <div>
-          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Kelas / Rombel</label>
-          <input type="text" id="kelas" class="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="Contoh: XII-MIPA 1">
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Token Ujian</label>
+          <input type="text" id="token" class="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm font-mono tracking-widest uppercase focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="Diberikan Proktor / Pengawas">
         </div>
 
-        <button onclick="mulaiUjian()" id="btnMulai" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-md hover:shadow-lg transition-all text-sm mt-2">
-          Mulai Mengerjakan Ujian
+        <button onclick="prosesLogin()" id="btnMulai" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-md hover:shadow-lg transition-all text-xs tracking-wider uppercase mt-2">
+          Masuk & Mulai Mengerjakan
         </button>
       </div>
     </div>
@@ -53,8 +49,8 @@
     <!-- Header CBT -->
     <header class="bg-white border-b border-slate-200 px-6 py-3.5 flex justify-between items-center sticky top-0 z-10 shadow-sm">
       <div class="flex items-center gap-3">
-        <div class="w-9 h-9 bg-indigo-100 text-indigo-700 font-bold rounded-full flex items-center justify-center text-sm">
-          <span id="avatarInitial">S</span>
+        <div class="w-9 h-9 bg-indigo-100 text-indigo-700 font-bold rounded-full flex items-center justify-center text-sm" id="avatarInitial">
+          S
         </div>
         <div>
           <h3 id="displayNama" class="font-bold text-slate-800 text-sm leading-tight"></h3>
@@ -62,8 +58,8 @@
         </div>
       </div>
       <div class="text-right">
-        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Durasi Pengerjaan</span>
-        <div id="timer" class="text-lg font-mono font-bold text-indigo-600">00:00</div>
+        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Sisa Waktu</span>
+        <div id="timer" class="text-lg font-mono font-bold text-rose-600">00:00:00</div>
       </div>
     </header>
 
@@ -84,8 +80,8 @@
 
         <!-- Tombol Navigasi Bawah -->
         <div class="flex justify-between items-center pt-4 border-t border-slate-100">
-          <button onclick="prevSoal()" id="btnPrev" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-semibold transition-all">← Sebelumnya</button>
-          <button onclick="nextSoal()" id="btnNext" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition-all">Selanjutnya →</button>
+          <button onclick="prevSoal()" id="btnPrev" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-all">← Sebelumnya</button>
+          <button onclick="nextSoal()" id="btnNext" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all">Selanjutnya →</button>
         </div>
       </div>
 
@@ -95,7 +91,7 @@
         <div id="navGrid" class="grid grid-cols-5 gap-2 max-h-72 overflow-y-auto pr-1"></div>
 
         <div class="mt-6 pt-4 border-t border-slate-100">
-          <button onclick="konfirmasiSelesai()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm shadow-sm transition-all">
+          <button onclick="konfirmasiSelesai()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-sm transition-all">
             Kirim Lembar Jawaban
           </button>
         </div>
@@ -104,60 +100,81 @@
   </div>
 
   <script>
-    // URL Backend Google Apps Script Siswa
-    const API_URL = "https://script.google.com/macros/s/AKfycbyTJLjUeDz0JXbcUo7E05jYSBV7LhCqLQJKHtSJ0MYJ0Pivff1za1NaqD7NDaSbXG9h/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbwzpp9BRwGlf0By_LJJARjuTrVAdpPcrY5vnVgj6jI55cn1mPSXWzMV050eBGIhGjp-/exec";
 
     let bankSoal = [];
     let userAnswers = {};
     let currentIndex = 0;
     let timerInterval = null;
-    let secondsElapsed = 0;
+    let timeRemainingSeconds = 0;
+    let pesertaAktif = null;
 
-    async function mulaiUjian() {
+    async function prosesLogin() {
       const nisn = document.getElementById("nisn").value.trim();
-      const nama = document.getElementById("nama").value.trim();
-      const kelas = document.getElementById("kelas").value.trim();
+      const token = document.getElementById("token").value.trim().toUpperCase();
 
-      if (!nisn || !nama) return alert("Mohon lengkapi NISN dan Nama!");
+      if (!nisn || !token) return alert("Mohon isi NISN dan Token Ujian!");
 
       const btn = document.getElementById("btnMulai");
-      btn.innerText = "Mengambil Soal dari Server...";
+      btn.innerText = "Memverifikasi Peserta...";
       btn.disabled = true;
 
       try {
-        const res = await fetch(`${API_URL}?action=getSoal`);
-        const json = await res.json();
+        // 1. Verifikasi Siswa & Token ke Google Apps Script
+        const resAuth = await fetch(`${API_URL}?action=loginSiswa&nisn=${encodeURIComponent(nisn)}&token=${encodeURIComponent(token)}`);
+        const authData = await resAuth.json();
 
-        if (json.status !== "success" || !json.data || json.data.length === 0) {
-          return alert("Bank soal belum diisi oleh guru atau kosong.");
+        if (authData.status !== "success") {
+          alert(authData.message);
+          return;
         }
 
-        bankSoal = json.data;
-        
-        // Tampilkan CBT Area
+        pesertaAktif = authData.data;
+
+        // 2. Mengambil Bank Soal
+        btn.innerText = "Mengambil Soal...";
+        const resSoal = await fetch(`${API_URL}?action=getSoal`);
+        const jsonSoal = await resSoal.json();
+
+        if (jsonSoal.status !== "success" || !jsonSoal.data || jsonSoal.data.length === 0) {
+          return alert("Bank soal belum siap atau kosong.");
+        }
+
+        bankSoal = jsonSoal.data;
+
+        // 3. Masuk ke Layar Ujian
         document.getElementById("loginSection").classList.add("hidden");
         document.getElementById("cbtSection").classList.remove("hidden");
-        document.getElementById("displayNama").innerText = nama;
-        document.getElementById("displayKelas").innerText = kelas || "-";
-        document.getElementById("avatarInitial").innerText = nama.charAt(0).toUpperCase();
+        document.getElementById("displayNama").innerText = pesertaAktif.nama;
+        document.getElementById("displayKelas").innerText = `${pesertaAktif.nisn} - ${pesertaAktif.kelas}`;
+        document.getElementById("avatarInitial").innerText = pesertaAktif.nama.charAt(0).toUpperCase();
 
+        timeRemainingSeconds = (parseInt(pesertaAktif.durasi) || 90) * 60;
         startTimer();
         renderNavigasi();
         loadSoal(0);
+
       } catch (e) {
-        alert("Gagal terhubung ke database: " + e);
+        alert("Koneksi gagal: " + e);
       } finally {
-        btn.innerText = "Mulai Mengerjakan Ujian";
+        btn.innerText = "Masuk & Mulai Mengerjakan";
         btn.disabled = false;
       }
     }
 
     function startTimer() {
       timerInterval = setInterval(() => {
-        secondsElapsed++;
-        const mins = String(Math.floor(secondsElapsed / 60)).padStart(2, '0');
-        const secs = String(secondsElapsed % 60).padStart(2, '0');
-        document.getElementById("timer").innerText = `${mins}:${secs}`;
+        if (timeRemainingSeconds <= 0) {
+          clearInterval(timerInterval);
+          alert("Waktu pengerjaan telah habis! Jawaban Anda akan otomatis terkirim.");
+          kirimDataJawaban();
+          return;
+        }
+        timeRemainingSeconds--;
+        const hours = String(Math.floor(timeRemainingSeconds / 3600)).padStart(2, '0');
+        const mins = String(Math.floor((timeRemainingSeconds % 3600) / 60)).padStart(2, '0');
+        const secs = String(timeRemainingSeconds % 60).padStart(2, '0');
+        document.getElementById("timer").innerText = `${hours}:${mins}:${secs}`;
       }, 1000);
     }
 
@@ -190,7 +207,6 @@
       document.getElementById("tipeBadge").innerText = s.tipe;
       document.getElementById("soalContainer").innerHTML = s.pertanyaan;
 
-      // Update State Navigasi
       renderNavigasi();
 
       const opsiDiv = document.getElementById("opsiContainer");
@@ -231,7 +247,7 @@
         const textarea = document.createElement("textarea");
         textarea.className = "w-full border border-slate-300 rounded-xl p-3.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none";
         textarea.rows = 4;
-        textarea.placeholder = "Tuliskan jawaban lengkap Anda di sini...";
+        textarea.placeholder = "Tuliskan jawaban Anda di sini...";
         textarea.value = userAnswers[index] || "";
         textarea.oninput = (e) => { 
           userAnswers[index] = e.target.value; 
@@ -240,7 +256,6 @@
         opsiDiv.appendChild(textarea);
       }
 
-      // Render Equation jika ada MathJax
       if (window.MathJax && window.MathJax.typesetPromise) {
         MathJax.typesetPromise();
       }
@@ -270,17 +285,20 @@
       if (currentIndex < bankSoal.length - 1) loadSoal(currentIndex + 1);
     }
 
-    async function konfirmasiSelesai() {
+    function konfirmasiSelesai() {
       const totalTerjawab = Object.keys(userAnswers).filter(k => userAnswers[k] && userAnswers[k].length > 0).length;
       const konfirmasi = confirm(`Anda telah menjawab ${totalTerjawab} dari ${bankSoal.length} soal.\n\nApakah Anda yakin ingin menyelesaikan dan mengirim jawaban?`);
-      if (!konfirmasi) return;
+      if (konfirmasi) {
+        kirimDataJawaban();
+      }
+    }
 
-      // Hitung skor otomatis untuk PG, BS, dan PGK
+    async function kirimDataJawaban() {
       let score = 0;
       bankSoal.forEach((s, idx) => {
         const ans = userAnswers[idx];
         if (s.tipe === "PG" || s.tipe === "BS") {
-          if (ans === s.kunci) score += 2.5; // Skala nilai contoh
+          if (ans === s.kunci) score += 2.5;
         } else if (s.tipe === "PGK") {
           if (Array.isArray(ans) && ans.join(", ") === s.kunci) score += 2.5;
         }
@@ -288,9 +306,9 @@
 
       const payload = {
         action: "submitUjian",
-        nisn: document.getElementById("nisn").value.trim(),
-        nama: document.getElementById("nama").value.trim(),
-        kelas: document.getElementById("kelas").value.trim(),
+        nisn: pesertaAktif.nisn,
+        nama: pesertaAktif.nama,
+        kelas: pesertaAktif.kelas,
         nilai: score,
         detailJawaban: userAnswers
       };
@@ -301,10 +319,10 @@
           body: JSON.stringify(payload)
         });
         clearInterval(timerInterval);
-        alert(`Ujian Berhasil Dikirim!\n\nNama: ${payload.nama}\nNilai Pilihan Ganda: ${score}`);
+        alert(`Ujian Selesai!\n\nNama: ${payload.nama}\nNilai Pilihan Ganda: ${score}`);
         location.reload();
       } catch (e) {
-        alert("Terjadi kendala saat mengirim jawaban, coba lagi: " + e);
+        alert("Terjadi masalah saat mengirim jawaban, coba lagi: " + e);
       }
     }
   </script>
